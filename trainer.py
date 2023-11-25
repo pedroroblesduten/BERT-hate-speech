@@ -8,15 +8,16 @@ from utils import plot_losses
 import math
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from transformers import BertTokenizerFast, BertForSequenceClassification, Trainer, TrainingArguments
+from transformers import BertTokenizerFast, BertForSequenceClassification, Trainer, TrainingArguments, AutoTokenizer
 
 
-class TrainerTransformer():
+class Trainer():
     def __init__(self,
                  huggingface_model_name,
                  model_name,
                  device,
                  epochs,
+                 num_labels,
                  save_model_path,
                  save_losses_path,
                  save_weights_interval,
@@ -28,10 +29,11 @@ class TrainerTransformer():
         self.model_name = model_name
         self.device = device
         self.epochs = epochs
+        self.num_labels = num_labels
         self.save_model_path = save_model_path
         self.save_losses_path = save_losses_path
         self.save_weights_interval = save_weights_interval
-        
+
         self.load_data_config = load_data_config
         self.loader = LoadData(**self.load_data_config.__dict__)
 
@@ -41,7 +43,7 @@ class TrainerTransformer():
         model = BertForSequenceClassification.from_pretrained(self.huggingface_model_name, num_labels=self.num_labels)
         if to_gpu:
             model.to(self.device)
-        
+
         return model
 
     def save_models(self, model, model_name, epoch, val_loss, path):
@@ -65,9 +67,9 @@ class TrainerTransformer():
 
         # Tokenize the texts
         tokenized_inputs = tokenizer(
-            texts, 
-            padding=True, 
-            truncation=True, 
+            texts,
+            padding=True,
+            truncation=True,
             return_tensors="pt"  # Return PyTorch tensors
         )
 
@@ -90,7 +92,7 @@ class TrainerTransformer():
 
         # Training configurations
         criterion = torch.nn.BCEWithLogitsLoss()
-        optimizer = torch.optim.AdamW(transformer.parameters(), lr=1e-5)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5)
 
         print('- training transformer model -')
 
@@ -103,12 +105,13 @@ class TrainerTransformer():
             model.train()
             with tqdm(
                 total=len(train_dataloader) + len(val_dataloader),
-                    desc=f"EPOCH {epoch+1} WITH DATASET PARTITION {dataset_partition + 1}",
+                    desc=f"EPOCH {epoch+1}",
                 ) as bar:
                 for batch in train_dataloader:
 
                     text_tokens, labels, ids = self.process_input(batch)
-                    logits = model(text_tokens)
+                    output = model(**text_tokens)
+                    logits = output.logits
 
                     # Descending the gradient and updating the linear layer
                     optimizer.zero_grad()
@@ -118,7 +121,7 @@ class TrainerTransformer():
 
                     # Saving the batch loss
                     loss_numpy = loss.detach().cpu().numpy()
-                    epoch_train_loss.append(loss_numpy)
+                    epoch_train_losses.append(loss_numpy)
                     bar.update(1)
 
                 model.eval()
@@ -127,14 +130,15 @@ class TrainerTransformer():
                         text_tokens, labels, ids = self.process_input(batch)
 
                         # Forward pass through the model
-                        logits = model(text_tokens)
+                        output = model(**text_tokens)
+                        logits = output.logits
 
                         # Getting the loss
                         loss = criterion(logits, labels)
 
                         # Saving the batch loss
                         loss_numpy = loss.detach().cpu().numpy()
-                        epoch_val_loss.append(loss_numpy)
+                        epoch_val_losses.append(loss_numpy)
                         bar.update(1)
 
             all_train_loss.append(np.mean(epoch_train_losses))

@@ -19,14 +19,17 @@ class LoadDataConfig:
 # ---- TRAINER CONFIG ----
 @dataclass
 class TrainerConfig:
-    load_data_config: LoadDataConfig
+    load_data_config: LoadDataConfig = field(
+        default_factory=lambda: LoadDataConfig()
+    )
     save_model_path: str = "./model_checkpoints/"
     save_losses_path: str = "./artifacts/losses"
     save_weights_interval: int = 10
     device: str = "cuda"
     epochs: int = 400
-    huggingface_model_name = 'pysentimiento/bertabaporu-pt-hate-speech'
-    model_name = 'bert_hate_speech_discord
+    huggingface_model_name: str = 'pysentimiento/bertabaporu-pt-hate-speech'
+    model_name: str = 'bert_hate_speech_discord'
+    num_labels: int = 5
 
 def get_trainer_config():
     trainer_config = TrainerConfig(load_data_config=LoadDataConfig())
