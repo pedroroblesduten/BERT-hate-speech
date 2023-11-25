@@ -26,7 +26,7 @@ class TrainerConfig:
     device: str = "cuda"
     epochs: int = 400
     huggingface_model_name = 'pysentimiento/bertabaporu-pt-hate-speech'
-    model_name = 'bert_hate_speech_discord'
+    model_name = 'bert_hate_speech_discord
 
 def get_trainer_config():
     trainer_config = TrainerConfig(load_data_config=LoadDataConfig())

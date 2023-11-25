@@ -77,7 +77,7 @@ class TrainerTransformer():
 
         return tokenized_inputs, labels, ids
 
-    def run(self):
+    def train(self):
         print('----------------------------')
         print('   STARTING BERT TRAINING   ')
         print('----------------------------')
