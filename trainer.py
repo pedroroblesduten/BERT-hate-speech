@@ -4,36 +4,34 @@ from load_data import LoadData
 import os
 from tqdm import tqdm
 import numpy as np
-from torchvision.utils import save_image
-from models.vqvae import VQVAE
-from models.transformer import Transformer
-from utils import loading_bar, plot_losses
+from utils import plot_losses
 import math
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from transformers import BertTokenizerFast, BertForSequenceClassification, Trainer, TrainingArguments
 
 
 class TrainerTransformer():
-    def __init__(
-        self,
-        batch_size,
-        device,
-        epochs,
-        save_model_path,
-        save_losses_path,
-        save_weights_interval,
-        mask_schedule,
-        sos_token,
-        mask_token,
-        vqvae_config,
-        load_data_config,
-        transformer_config
-    ):
+    def __init__(self,
+                 huggingface_model_name,
+                 model_name,
+                 device,
+                 epochs,
+                 save_model_path,
+                 save_losses_path,
+                 save_weights_interval,
+                 load_data_config):
+
+
+
         self.huggingface_model_name = huggingface_model_name
         self.model_name = model_name
         self.device = device
         self.epochs = epochs
         self.save_model_path = save_model_path
         self.save_losses_path = save_losses_path
-
+        self.save_weights_interval = save_weights_interval
+        
         self.load_data_config = load_data_config
         self.loader = LoadData(**self.load_data_config.__dict__)
 
@@ -57,9 +55,27 @@ class TrainerTransformer():
             save_path = os.path.join(path, name)
             torch.save(model.state_dict(), save_path)
 
-    def process_text():
+    def process_input(self, batch):
+        texts = batch['text']
+        labels = batch['labels']
+        ids = batch['message_id']
 
-        pass
+        # Load tokenizer
+        tokenizer = AutoTokenizer.from_pretrained(self.huggingface_model_name)
+
+        # Tokenize the texts
+        tokenized_inputs = tokenizer(
+            texts, 
+            padding=True, 
+            truncation=True, 
+            return_tensors="pt"  # Return PyTorch tensors
+        )
+
+        # Move data to the same device as the model
+        tokenized_inputs = {k: v.to(self.device) for k, v in tokenized_inputs.items()}
+        labels = labels.to(self.device)
+
+        return tokenized_inputs, labels, ids
 
     def run(self):
         print('----------------------------')
