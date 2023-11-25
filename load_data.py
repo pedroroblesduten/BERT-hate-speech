@@ -2,6 +2,7 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Dataset
 from sklearn.model_selection import train_test_split
+from tqdm import tqdm
 
 class LoadData:
     def __init__(self, csv_path, batch_size, label_columns):
@@ -15,6 +16,12 @@ class LoadData:
         data[self.label_columns] = data[self.label_columns].astype(int)
         train_val_df, test_df = train_test_split(data, test_size=0.1)
         train_df, val_df = train_test_split(train_val_df, test_size=0.1)
+
+        # Reset index for all DataFrames
+        train_df = train_df.reset_index(drop=True)
+        val_df = val_df.reset_index(drop=True)
+        test_df = test_df.reset_index(drop=True)
+
         return train_df, val_df, test_df
 
     def create_dataloaders(self):
@@ -67,10 +74,10 @@ if __name__ == '__main__':
     assert isinstance(test_loader, DataLoader), "Test loader is not an instance of DataLoader"
 
     # Check if a batch from the dataloader contains expected keys
-    for batch in train_loader:
+    for batch in tqdm(train_loader):
         assert 'message_id' in batch, "'message_id' not in batch"
         assert 'text' in batch, "'text' not in batch"
         assert 'labels' in batch, "'labels' not in batch"
-        break  # Test only the first batch
+        # Test only the first batch
 
     print("All tests passed successfully. Dataloader is correct!")
