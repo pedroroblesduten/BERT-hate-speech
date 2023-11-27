@@ -92,7 +92,7 @@ class Trainer():
 
         # Training configurations
         criterion = torch.nn.BCEWithLogitsLoss()
-        optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=1e-6)
 
         print('- training transformer model -')
 
